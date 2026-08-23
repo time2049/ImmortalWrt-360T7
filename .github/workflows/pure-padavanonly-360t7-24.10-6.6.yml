@@ -8,7 +8,6 @@ on:
          description: '是否清理ccache'
          default: 'false'
 
-
 # ==================== 环境变量配置 ====================
 env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
@@ -30,6 +29,15 @@ jobs:
     # [1] 检出仓库代码
     - name: 检出项目分支源码
       uses: actions/checkout@main
+
+    # [新增] TG 通知 (编译开始)
+    - name: TG 通知 (编译开始)
+      if: always()
+      run: |
+        MSG="🚀 OpenWrt 编译开始%0A%0A📦 仓库: ${GITHUB_REPOSITORY}%0A🎯 设备: 360T7%0A🕒 时间: $(date '+%Y-%m-%d %H:%M:%S')"
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d text="$MSG"
 
     # [2] 清理磁盘空间
     - name: 释放编译环境磁盘空间 (Ubuntu)
@@ -151,7 +159,7 @@ jobs:
         name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
 
-    # [14] 生成 Release 标签
+    # [14] 生成 Release 标签 (已更新网关和组件说明)
     - name: 生成 Release 标签
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -164,9 +172,9 @@ jobs:
          ## 📦 固件信息
          - 🎯 设备：360T7 (MT7981)
          - 📅 构建：$time
-         - 🌐 网关：192.168.77.1
+         - 🌐 网关：10.1.1.1
          - 🔑 密码：*空*
-         - 🔧 组件：Nikki
+         - 🔧 组件：极简实用版 (含温度显示/802.11r漫游)
          
          > ⚠️ 首次登录请修改默认密码
          EOF
@@ -185,6 +193,16 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
+
+    # [新增] TG 通知 (编译结果)
+    - name: TG 通知 (编译结果)
+      if: always()
+      run: |
+        STATUS=$([[ "${{ steps.compile.outputs.status }}" == "success" ]] && echo "✅ 编译成功" || echo "❌ 编译失败")
+        MSG="${STATUS}%0A%0A📦 仓库: ${GITHUB_REPOSITORY}%0A🎯 设备: 360T7%0A🕒 时间: $(date '+%Y-%m-%d %H:%M:%S')%0A🔗 详情: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d text="$MSG"
 
     # [16] 清理旧的工作流运行记录
     - name: 清理旧的工作流记录

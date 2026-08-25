@@ -10,7 +10,7 @@ on:
 
 # ==================== 环境变量配置 ====================
 env:
-  REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.1.git
+  REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x.git
   REPO_BRANCH: openwrt-24.10-6.1
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: 6.1_pure.config
